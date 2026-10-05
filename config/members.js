@@ -110,7 +110,8 @@ export const ALLIANCE_MEMBERS = [
     { uid: '1560578597000592', role: 'member', note: 'R3' },
     { uid: '1000661539000590', role: 'member', note: 'R3' },
     { uid: '1465795033000592', role: 'member', note: 'R3' },
-    { uid: '1570682825000492', role: 'member', note: 'R3' }
+    { uid: '1570682825000492', role: 'member', note: 'R3' },
+    { uid: '1699696455000482', role: 'member', note: 'R3' }
 ]
 
 /** Leaders — hiển thị trên giao diện */
