@@ -13,7 +13,7 @@ const USER_AGENTS = [
 function getRandomUA() {
     return USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)]
 }
-function fetchUuidFromOldId(oldUid) {
+async function fetchUuidFromOldId(oldUid) {
     try {
         const res = await fetch(`https://giftcenter.darkwar-survival.com/api/getuser?uid=${oldUid}`);
         const data = await res.json();
@@ -30,7 +30,7 @@ function fetchUuidFromOldId(oldUid) {
 
 export default defineEventHandler(async (event) => {
     // Chạy thử với ID cũ của bạn
-    fetchUuidFromOldId('1056105620000487');
+    await fetchUuidFromOldId('1056105620000487');
     const query = getQuery(event)
     const uid = query.uid
 
