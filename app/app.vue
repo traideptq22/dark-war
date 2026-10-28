@@ -380,7 +380,7 @@ async function fetchAllMembers(forceRefresh = false) {
   const results = await Promise.allSettled(
     activeUids.value.map(uid => fetchMember(uid))
   )
-  debugger
+  console.log(results)
   displayMembers.value = results.map((r, i) =>
     r.status === 'fulfilled'
       ? r.value
