@@ -358,6 +358,7 @@ function saveCache(data) {
 // ═══════════════════════════════════════════════════
 async function fetchMember(uid) {
   const res = await fetch(`/api/getuser?uid=${encodeURIComponent(uid)}`)
+  console.log('info:',res)
   if (!res.ok) throw new Error(`HTTP ${res.status}`)
   const json = await res.json()
   if (json.code === 0 && json.result) return { uid, ...json.result }
