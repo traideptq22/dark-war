@@ -1,6 +1,8 @@
 // Server API proxy: /api/redeem?uid=...&code=...
 // Tránh CORS khi browser gọi trực tiếp sang giftcenter.darkwar-survival.com
 
+import { UUID_BY_UID } from '../../config/members.js'
+
 const USER_AGENTS = [
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36',
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36',
@@ -23,7 +25,24 @@ export default defineEventHandler(async (event) => {
     }
 
     const userAgent = getRandomUA()
-    const url = `https://giftcenter.darkwar-survival.com/code.php?uid=${encodeURIComponent(uid)}&code=${encodeURIComponent(code)}`
+
+    // uuid gắn với từng tài khoản trong config/members.js
+    // (có thể override qua query ?uuid=...)
+    const uuid = String(query.uuid || UUID_BY_UID[uid] || '').trim()
+
+    // Chưa có uuid → BỎ QUA, không gọi lên giftcenter
+    if (!uuid) {
+        return {
+            code: -1,
+            skipped: true,
+            uid,
+            message: `Bỏ qua: chưa cấu hình uuid cho uid ${uid}`,
+        }
+    }
+
+    // Cấu trúc URL giống curl thật của store:
+    // code.php?uid=...&code=...&uuid=...&fromkoc=
+    const url = `https://giftcenter.darkwar-survival.com/code.php?uid=${encodeURIComponent(uid)}&code=${encodeURIComponent(code)}&uuid=${encodeURIComponent(uuid)}&fromkoc=`
 
     try {
         const response = await fetch(url, {

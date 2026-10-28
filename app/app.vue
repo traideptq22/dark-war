@@ -24,7 +24,7 @@
               class="btn-icon"
               :class="{ spinning: membersLoading }"
               :disabled="membersLoading"
-              title="Làm mới dữ liệu"
+              title="Renew data"
               @click="fetchAllMembers(true)"
             >↻</button>
           </div>
@@ -56,9 +56,6 @@
               :class="{
                 'member-card--error': getDisplayMember(cfg.uid)?.error,
                 'member-card--empty': !cfg.uid,
-                'member-card--redeeming': redeemingUids.has(cfg.uid),
-                'member-card--done-ok':  redeemResults.get(cfg.uid)?.ok === true,
-                'member-card--done-fail':redeemResults.get(cfg.uid)?.ok === false,
               }"
             >
               <!-- Empty slot -->
@@ -77,19 +74,6 @@
               <!-- Loaded member -->
               <template v-else>
                 <div class="member-avatar-wrap">
-                  <!-- Redeem spinner overlay -->
-                  <div v-if="redeemingUids.has(cfg.uid)" class="avatar-spinner-overlay">
-                    <span class="mini-spinner"></span>
-                  </div>
-                  <!-- Result badge -->
-                  <div
-                    v-if="redeemResults.has(cfg.uid) && !redeemingUids.has(cfg.uid)"
-                    class="result-badge"
-                    :class="redeemResults.get(cfg.uid)?.ok ? 'result-badge--ok' : 'result-badge--fail'"
-                  >
-                    {{ redeemResults.get(cfg.uid)?.ok ? '✓' : '✗' }}
-                  </div>
-
                   <img
                     v-if="getDisplayMember(cfg.uid)?.headimg"
                     :src="getDisplayMember(cfg.uid).headimg"
@@ -117,18 +101,6 @@
                     {{ formatPlatform(getDisplayMember(cfg.uid).platform) }}
                   </span>
                 </div>
-
-                <!-- Redeem result message -->
-                <p
-                  v-if="redeemResults.has(cfg.uid)"
-                  class="redeem-msg"
-                  :class="redeemResults.get(cfg.uid)?.ok ? 'redeem-msg--ok' : 'redeem-msg--fail'"
-                >
-                  {{ redeemResults.get(cfg.uid)?.msg }}
-                </p>
-                <p v-else-if="getDisplayMember(cfg.uid)?.error" class="member-error">
-                  {{ getDisplayMember(cfg.uid).error }}
-                </p>
               </template>
             </div>
           </template>
@@ -141,31 +113,14 @@
       <section class="gift-card" :class="{ 'gift-card--busy': isRedeeming }">
         <!-- Logo -->
         <div class="gift-card__header">
-          <div class="logo-hex">
-            <svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M30 5L50 17.5V42.5L30 55L10 42.5V17.5L30 5Z" stroke="url(#hG)" stroke-width="2" fill="none"/>
-              <path d="M30 14L43 21.5V36.5L30 44L17 36.5V21.5L30 14Z" fill="url(#hF)" opacity="0.3"/>
-              <text x="30" y="34" text-anchor="middle" font-size="14" font-weight="bold" fill="url(#hG)" font-family="Arial">DW</text>
-              <defs>
-                <linearGradient id="hG" x1="10" y1="5" x2="50" y2="55" gradientUnits="userSpaceOnUse">
-                  <stop stop-color="#f59e0b"/><stop offset="1" stop-color="#ef4444"/>
-                </linearGradient>
-                <linearGradient id="hF" x1="10" y1="5" x2="50" y2="55" gradientUnits="userSpaceOnUse">
-                  <stop stop-color="#f59e0b"/><stop offset="1" stop-color="#ef4444"/>
-                </linearGradient>
-              </defs>
+          <div class="logo-flag" aria-label="Cờ Việt Nam">
+            <svg viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg">
+              <rect width="60" height="40" rx="4" fill="#da251d"/>
+              <path d="M30 8 L32.35 14.76 L39.51 14.91 L33.80 19.24 L35.88 26.09 L30 22 L24.12 26.09 L26.20 19.24 L20.49 14.91 L27.65 14.76 Z" fill="#ffde00"/>
             </svg>
           </div>
-          <h1 class="gift-title">Darkwar Survival</h1>
+          <h1 class="gift-title">UNTV</h1>
           <p class="gift-subtitle">Gift Code Redemption</p>
-        </div>
-
-        <!-- Progress row -->
-        <div v-if="isRedeeming || redeemResults.size > 0" class="progress-row">
-          <div class="progress-bar-wrap">
-            <div class="progress-bar" :style="{ width: progressPct + '%' }"></div>
-          </div>
-          <span class="progress-label">{{ redeemDone }}/{{ redeemTotal }}</span>
         </div>
 
         <!-- Gift code input -->
@@ -179,7 +134,7 @@
               v-model="giftCode"
               type="text"
               class="field__input field__input--code"
-              placeholder="Nhập gift code..."
+              placeholder="Enter giftcode..."
               :disabled="isRedeeming"
               autocomplete="off"
               @keyup.enter="startRedeem"
@@ -194,11 +149,11 @@
           >
             <span v-if="!isRedeeming" class="btn-submit__inner">
               <span>⚡</span>
-              Kích hoạt Gift Code
+              Active Gift Code
             </span>
             <span v-else class="btn-submit__inner">
               <span class="spinner"></span>
-              Đang xử lý {{ redeemDone }}/{{ redeemTotal }}...
+              Processing...
             </span>
           </button>
 
@@ -208,50 +163,26 @@
             class="btn-reset"
             @click="resetRedeem"
           >
-            🔄 Nhập code khác
+            🔄 Enter other code
           </button>
         </div>
 
-        <!-- Summary results -->
-        <Transition name="fade-up">
-          <div v-if="!isRedeeming && redeemResults.size > 0" class="summary-panel">
-            <div
-              v-for="[uid, res] in redeemResults"
-              :key="uid"
-              class="summary-row"
-              :class="res.ok ? 'summary-row--ok' : 'summary-row--fail'"
-            >
-              <span class="summary-icon">{{ res.ok ? '✅' : '❌' }}</span>
-              <span class="summary-name">{{ getMemberName(uid) }}</span>
-              <span class="summary-msg">{{ res.msg }}</span>
-            </div>
-          </div>
-        </Transition>
       </section>
     </div>
 
-    <footer class="page-footer">Darkwar Survival © 2025 · Gift Code System</footer>
+    <footer class="page-footer">UNTV © 2025 · Gift Code System</footer>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { LEADER_MEMBERS, ACTIVE_UIDS } from '../config/members.js'
+import { LEADER_MEMBERS, ACTIVE_UIDS, UUID_BY_UID } from '../config/members.js'
 
 // ═══════════════════════════════════════════════════
 //  CONSTANTS
 // ═══════════════════════════════════════════════════
 const CACHE_KEY = 'dw_alliance_cache'
 const CACHE_TTL = 4 * 60 * 60 * 1000 // 4h
-
-const USER_AGENTS = [
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36',
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36',
-  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36',
-  'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36',
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:136.0) Gecko/20100101 Firefox/136.0',
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 Edg/145.0.0.0',
-]
 
 // ═══════════════════════════════════════════════════
 //  ALLIANCE STATE
@@ -273,6 +204,9 @@ function getDisplayMember(uid) {
 
 const activeUids = computed(() => ACTIVE_UIDS)
 
+/** Chỉ những uid đã có uuid mới được nhập code (còn lại bỏ qua) */
+const redeemUids = computed(() => activeUids.value.filter(uid => UUID_BY_UID[uid]))
+
 const cacheRemainingStr = computed(() => {
   if (!cacheTimestamp.value) return ''
   const remaining = (cacheTimestamp.value + CACHE_TTL) - Date.now()
@@ -285,24 +219,13 @@ const cacheRemainingStr = computed(() => {
 // ═══════════════════════════════════════════════════
 //  REDEEM STATE
 // ═══════════════════════════════════════════════════
-const giftCode       = ref('')
-const isRedeeming    = ref(false)
-const redeemingUids  = ref(new Set())        // đang xử lý
-const redeemResults  = ref(new Map())        // uid → { ok, msg }
-const redeemDone     = ref(0)
-const redeemTotal    = ref(0)
-
-const progressPct = computed(() =>
-  redeemTotal.value ? Math.round((redeemDone.value / redeemTotal.value) * 100) : 0
-)
+const giftCode      = ref('')
+const isRedeeming   = ref(false)
+const redeemResults = ref(new Map())        // uid → { ok, msg } (chỉ dùng nội bộ)
 
 // ═══════════════════════════════════════════════════
 //  HELPERS
 // ═══════════════════════════════════════════════════
-function getRandomUA() {
-  return USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)]
-}
-
 function getParticleStyle(i) {
   return {
     left: `${(i * 47) % 100}%`,
@@ -324,14 +247,6 @@ function getFlagEmoji(country) {
 function formatPlatform(p) {
   if (!p) return ''
   return p.replace('market_', '').replace('_', ' ')
-}
-
-function formatCacheTime(ts) {
-  return new Date(ts).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
-}
-
-function getMemberName(uid) {
-  return getDisplayMember(uid)?.name || uid?.slice(-6) || uid
 }
 
 // ═══════════════════════════════════════════════════
@@ -360,7 +275,6 @@ async function fetchMember(uid) {
   const res = await fetch(`/api/getuser?uid=${encodeURIComponent(uid)}`)
   if (!res.ok) throw new Error(`HTTP ${res.status}`)
   const json = await res.json()
-  console.log('info:',json)
   if (json.code === 0 && json.result) return { uid, ...json.result }
   throw new Error(json.message || 'Unknown error')
 }
@@ -381,7 +295,7 @@ async function fetchAllMembers(forceRefresh = false) {
   const results = await Promise.allSettled(
     activeUids.value.map(uid => fetchMember(uid))
   )
-  console.log(results)
+
   displayMembers.value = results.map((r, i) =>
     r.status === 'fulfilled'
       ? r.value
@@ -396,10 +310,9 @@ async function fetchAllMembers(forceRefresh = false) {
 }
 
 // ═══════════════════════════════════════════════════
-//  REDEEM GIFT CODE — for qua tất cả UID
+//  REDEEM GIFT CODE — chạy cho tất cả UID (không hiển thị kết quả)
 // ═══════════════════════════════════════════════════
 async function redeemForOne(uid, code) {
-  redeemingUids.value = new Set([...redeemingUids.value, uid])
   try {
     const res  = await fetch(`/api/redeem?uid=${encodeURIComponent(uid)}&code=${encodeURIComponent(code)}`)
     const json = await res.json()
@@ -408,9 +321,6 @@ async function redeemForOne(uid, code) {
     redeemResults.value.set(uid, { ok, msg: String(msg) })
   } catch (err) {
     redeemResults.value.set(uid, { ok: false, msg: err.message })
-  } finally {
-    redeemingUids.value = new Set([...redeemingUids.value].filter(u => u !== uid))
-    redeemDone.value++
   }
 }
 
@@ -418,16 +328,19 @@ async function startRedeem() {
   const code = giftCode.value.trim().toUpperCase()
   if (!code || isRedeeming.value) return
 
+  const targets = redeemUids.value
+
   isRedeeming.value   = true
   redeemResults.value = new Map()
-  redeemDone.value    = 0
-  redeemTotal.value   = activeUids.value.length
+
+  const skipped = activeUids.value.length - targets.length
+  if (skipped > 0) console.info(`[redeem] bỏ qua ${skipped} thành viên chưa có uuid`)
 
   // Chạy tuần tự để tránh rate-limit (thêm delay nhỏ giữa mỗi request)
-  for (const uid of activeUids.value) {
+  for (const uid of targets) {
     await redeemForOne(uid, code)
     // Delay 300ms giữa các request
-    if (uid !== activeUids.value.at(-1)) {
+    if (uid !== targets.at(-1)) {
       await new Promise(r => setTimeout(r, 300))
     }
   }
@@ -437,8 +350,6 @@ async function startRedeem() {
 
 function resetRedeem() {
   redeemResults.value = new Map()
-  redeemDone.value    = 0
-  redeemTotal.value   = 0
   giftCode.value      = ''
 }
 
@@ -856,15 +767,20 @@ html, body {
   margin-bottom: 28px;
 }
 
-.logo-hex {
-  width: 68px;
-  height: 68px;
-  filter: drop-shadow(0 0 14px rgba(245,158,11,0.5));
+.logo-flag {
+  width: 72px;
+  height: 48px;
+  filter: drop-shadow(0 0 14px rgba(218,37,29,0.5));
   animation: pulse-logo 3s ease-in-out infinite;
 }
+.logo-flag svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
 @keyframes pulse-logo {
-  0%, 100% { filter: drop-shadow(0 0 14px rgba(245,158,11,0.5)); }
-  50%       { filter: drop-shadow(0 0 26px rgba(245,158,11,0.9)); }
+  0%, 100% { filter: drop-shadow(0 0 14px rgba(218,37,29,0.5)); }
+  50%       { filter: drop-shadow(0 0 26px rgba(218,37,29,0.85)); }
 }
 
 .gift-title {
