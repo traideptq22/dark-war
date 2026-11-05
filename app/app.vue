@@ -204,8 +204,25 @@ function getDisplayMember(uid) {
 
 const activeUids = computed(() => ACTIVE_UIDS)
 
-/** Chỉ những uid đã có uuid mới được nhập code (còn lại bỏ qua) */
-const redeemUids = computed(() => activeUids.value.filter(uid => UUID_BY_UID[uid]))
+const mongoUuidMap = ref({})
+
+async function fetchActiveUuids() {
+  try {
+    const res = await fetch('/api/active-uuids')
+    const json = await res.json()
+    if (json?.ok && json.map) {
+      mongoUuidMap.value = json.map
+    }
+  } catch (e) {
+    console.warn('[app] fetchActiveUuids fallback:', e.message)
+  }
+}
+
+/** Chỉ những uid đã có uuid từ MongoDB checkin_accounts (hoặc fallback config) mới được nhập code */
+const redeemUids = computed(() => {
+  const merged = { ...UUID_BY_UID, ...mongoUuidMap.value }
+  return activeUids.value.filter(uid => merged[uid])
+})
 
 const cacheRemainingStr = computed(() => {
   if (!cacheTimestamp.value) return ''
@@ -356,7 +373,10 @@ function resetRedeem() {
 // ═══════════════════════════════════════════════════
 //  INIT
 // ═══════════════════════════════════════════════════
-onMounted(() => fetchAllMembers(false))
+onMounted(() => {
+  fetchActiveUuids()
+  fetchAllMembers(false)
+})
 </script>
 
 <style>

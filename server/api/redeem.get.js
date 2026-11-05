@@ -2,6 +2,7 @@
 // Tránh CORS khi browser gọi trực tiếp sang giftcenter.darkwar-survival.com
 
 import { UUID_BY_UID } from '../../config/members.js'
+import { getUuidForUid } from '../utils/mongo.js'
 
 const USER_AGENTS = [
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36',
@@ -26,9 +27,8 @@ export default defineEventHandler(async (event) => {
 
     const userAgent = getRandomUA()
 
-    // uuid gắn với từng tài khoản trong config/members.js
-    // (có thể override qua query ?uuid=...)
-    const uuid = String(query.uuid || UUID_BY_UID[uid] || '').trim()
+    // uuid ưu tiên query ?uuid=..., tiếp theo từ MongoDB checkin_accounts, fallback sang config/members.js
+    const uuid = String(query.uuid || (await getUuidForUid(uid)) || '').trim()
 
     // Chưa có uuid → BỎ QUA, không gọi lên giftcenter
     if (!uuid) {
