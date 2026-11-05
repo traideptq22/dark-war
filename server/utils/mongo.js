@@ -5,7 +5,7 @@ let client = null
 let db = null
 
 const DEFAULT_URI =
-  'mongodb+srv://dieboytqno2_db_user:Zxcv@123123$@cluster0.fxulkfz.mongodb.net/vls_492'
+  'mongodb+srv://dieboytqno2_db_user:Zxcv%40123123%24@cluster0.fxulkfz.mongodb.net/vsl_492?retryWrites=true&w=majority'
 
 export async function getDb() {
   if (db) return db
